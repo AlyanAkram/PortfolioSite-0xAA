@@ -1,185 +1,254 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, Suspense } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { useGLTF, Float } from '@react-three/drei'
+import * as THREE from 'three'
 
-/*
-  DesktopBackground.jsx
-  ──────────────────────────────────────────────────────────────────────────────
-  Renders a canvas-based retro 3-D perspective grid that tilts subtly to follow
-  the mouse cursor, giving depth to the desktop. Layered on top is a radial
-  green ambient glow and a scanline overlay for the CRT retro feel.
+const cardModel = '/AS.glb'
 
-  No dependencies beyond React — pure canvas2D.
-*/
+const LERP_SPEED = 0.06
+const MAX_YAW = 0.35
+const MAX_PITCH = 0.22
 
-// ── tunables ──────────────────────────────────────────────────────────────────
-const CFG = {
-  bgColor:        '#07100a',    // base background
-  gridColor:      '#00c840',    // primary grid line color
-  gridAlpha:      0.18,         // base line opacity
-  gridAlphaFar:   0.05,         // horizon line opacity (distance fade)
-  cols:           24,           // vertical lines
-  rows:           18,           // horizontal lines
-  perspective:    600,          // CSS-like perspective depth
-  tiltMax:        12,           // max degrees of tilt (X and Y axes)
-  tiltSmooth:     0.06,         // lerp factor — lower = lazier follow
-  glowRadius:     0.55,         // radial glow coverage (fraction of min dimension)
-  scanlineAlpha:  0.07,         // scanline bar opacity
-  scanlineGap:    4,            // px between scanline bars
+function AceCard({ mouseRef }) {
+  const { scene } = useGLTF(cardModel)
+
+  const groupRef = useRef()
+
+  const currentRot = useRef({
+    x: 0,
+    y: 0,
+  })
+
+  const targetRot = useRef({
+    x: 0,
+    y: 0,
+  })
+
+  useEffect(() => {
+    scene.traverse((obj) => {
+      if (obj.isMesh || obj.isSkinnedMesh) {
+        obj.castShadow = true
+        obj.receiveShadow = true
+        obj.frustumCulled = false
+
+        const mats = Array.isArray(obj.material)
+          ? obj.material
+          : [obj.material]
+
+        mats.forEach((m) => {
+          if (!m) return
+
+          if (
+            m.isMeshStandardMaterial ||
+            m.isMeshPhysicalMaterial
+          ) {
+            m.roughness = 0.45
+            m.metalness = 0.15
+
+            // subtle green cyber glow
+            m.emissive = new THREE.Color('#0bff6d')
+            m.emissiveIntensity = 0.08
+          }
+
+          m.needsUpdate = true
+        })
+      }
+    })
+
+    // Rotate so front of card faces camera
+    scene.rotation.set(Math.PI / 2, -Math.PI / 2, 0)
+
+    // Scale card nicely
+    scene.scale.setScalar(3.2)
+
+    // Raise slightly
+    scene.position.set(0, 0.2, 0)
+
+  }, [scene])
+
+  useFrame((state) => {
+    if (!groupRef.current) return
+
+    targetRot.current.y =
+      mouseRef.current.x * MAX_YAW
+
+    targetRot.current.x =
+      -mouseRef.current.y * MAX_PITCH
+
+    currentRot.current.x +=
+      (targetRot.current.x - currentRot.current.x) *
+      LERP_SPEED
+
+    currentRot.current.y +=
+      (targetRot.current.y - currentRot.current.y) *
+      LERP_SPEED
+
+    groupRef.current.rotation.x = currentRot.current.x
+    groupRef.current.rotation.y = currentRot.current.y
+
+    // subtle idle movement
+    groupRef.current.position.y =
+      Math.sin(state.clock.elapsedTime * 1.2) * 0.08
+  })
+
+  return (
+    <Float
+      speed={1.5}
+      rotationIntensity={0.15}
+      floatIntensity={0.2}
+    >
+      <group ref={groupRef}>
+        <primitive object={scene} />
+      </group>
+    </Float>
+  )
+}
+
+function CameraRig() {
+  const { camera } = useThree()
+
+  useEffect(() => {
+    camera.fov = 90
+    camera.near = 0.1
+    camera.far = 100
+    camera.position.set(0, 0, 7)
+
+    camera.lookAt(0, 0, 0)
+
+    camera.updateProjectionMatrix()
+  }, [camera])
+
+  return null
+}
+
+function Lights() {
+  return (
+    <>
+      {/* base ambience */}
+      <ambientLight intensity={1.8} color="#0aff7b" />
+
+      {/* main spotlight */}
+      <spotLight
+        position={[0, 3, 6]}
+        intensity={80}
+        angle={0.4}
+        penumbra={1}
+        color="#00ff88"
+      />
+
+      {/* front fill */}
+      <pointLight
+        position={[0, 0, 5]}
+        intensity={25}
+        color="#55ffbb"
+      />
+
+      {/* left rim */}
+      <pointLight
+        position={[-4, 1, 1]}
+        intensity={18}
+        color="#00ff66"
+      />
+
+      {/* right rim */}
+      <pointLight
+        position={[4, 1, 1]}
+        intensity={18}
+        color="#00ff66"
+      />
+
+      {/* bottom glow */}
+      <pointLight
+        position={[0, -3, 2]}
+        intensity={22}
+        color="#007733"
+      />
+    </>
+  )
 }
 
 export default function DesktopBackground() {
-  const canvasRef = useRef(null)
+  const mouseRef = useRef({
+    x: 0,
+    y: 0,
+  })
 
   useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
+    const onMove = (e) => {
+      mouseRef.current.x =
+        (e.clientX / window.innerWidth) * 2 - 1
 
-    let raf
-    let W, H
-    // current mouse position normalised to [-1, 1]
-    let targetX = 0, targetY = 0
-    let currentX = 0, currentY = 0
-
-    // ── resize ──────────────────────────────────────────────────────────────
-    function resize() {
-      W = canvas.width  = canvas.offsetWidth
-      H = canvas.height = canvas.offsetHeight
+      mouseRef.current.y =
+        (e.clientY / window.innerHeight) * 2 - 1
     }
 
-    // ── mouse tracking ───────────────────────────────────────────────────────
-    function onMouseMove(e) {
-      targetX = (e.clientX / window.innerWidth)  * 2 - 1   // -1 … 1
-      targetY = (e.clientY / window.innerHeight) * 2 - 1
-    }
+    window.addEventListener('mousemove', onMove)
 
-    // ── 3-D grid projection ──────────────────────────────────────────────────
-    // We treat the grid as a flat plane in 3-D space, then apply a rotation
-    // matrix driven by the mouse, then project with perspective division.
-
-    function project(x3, y3, z3, tiltXrad, tiltYrad) {
-      // rotate around X axis (tiltY from mouse Y)
-      const cosX = Math.cos(tiltXrad), sinX = Math.sin(tiltXrad)
-      const y3r =  y3 * cosX - z3 * sinX
-      const z3r =  y3 * sinX + z3 * cosX
-
-      // rotate around Y axis (tiltX from mouse X)
-      const cosY = Math.cos(tiltYrad), sinY = Math.sin(tiltYrad)
-      const x3r =  x3 * cosY + z3r * sinY
-      const z3rr = -x3 * sinY + z3r * cosY
-
-      // perspective divide
-      const scale = CFG.perspective / (CFG.perspective + z3rr + 300)
-      return {
-        sx: W / 2 + x3r * scale,
-        sy: H / 2 + y3r * scale,
-        alpha: Math.max(0, Math.min(1, scale)),   // fade far points
-      }
-    }
-
-    function drawFrame() {
-      // smooth lerp toward mouse target
-      currentX += (targetX - currentX) * CFG.tiltSmooth
-      currentY += (targetY - currentY) * CFG.tiltSmooth
-
-      const tiltX = -currentY * (CFG.tiltMax * Math.PI / 180)   // mouse Y → rotate X
-      const tiltY =  currentX * (CFG.tiltMax * Math.PI / 180)   // mouse X → rotate Y
-
-      ctx.clearRect(0, 0, W, H)
-
-      // ── base background ──────────────────────────────────────────────────
-      ctx.fillStyle = CFG.bgColor
-      ctx.fillRect(0, 0, W, H)
-
-      // ── radial green ambient glow ────────────────────────────────────────
-      const gR = Math.min(W, H) * CFG.glowRadius
-      const grd = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, gR)
-      grd.addColorStop(0,   'rgba(0,200,64,0.07)')
-      grd.addColorStop(0.5, 'rgba(0,150,40,0.03)')
-      grd.addColorStop(1,   'rgba(0,0,0,0)')
-      ctx.fillStyle = grd
-      ctx.fillRect(0, 0, W, H)
-
-      // ── grid geometry ────────────────────────────────────────────────────
-      // Define the grid in 3-D object space:
-      //   x ∈ [-halfW, halfW], y ∈ [-halfH, halfH], z = 0 (flat plane)
-      const halfW = W * 0.8
-      const halfH = H * 0.8
-
-      // Helper: draw a line between two projected points, fading with depth
-      function gridLine(x0, y0, z0, x1, y1, z1) {
-        const p0 = project(x0, y0, z0, tiltX, tiltY)
-        const p1 = project(x1, y1, z1, tiltX, tiltY)
-        const alpha = ((p0.alpha + p1.alpha) / 2) * CFG.gridAlpha
-        ctx.beginPath()
-        ctx.moveTo(p0.sx, p0.sy)
-        ctx.lineTo(p1.sx, p1.sy)
-        ctx.strokeStyle = `rgba(0,200,64,${alpha.toFixed(3)})`
-        ctx.lineWidth = 0.5
-        ctx.stroke()
-      }
-
-      // Vertical lines (constant x, sweep z/y is irrelevant — flat plane)
-      for (let i = 0; i <= CFG.cols; i++) {
-        const x = -halfW + (halfW * 2) * (i / CFG.cols)
-        gridLine(x, -halfH, 0,  x, halfH, 0)
-      }
-
-      // Horizontal lines
-      for (let j = 0; j <= CFG.rows; j++) {
-        const y = -halfH + (halfH * 2) * (j / CFG.rows)
-        gridLine(-halfW, y, 0,  halfW, y, 0)
-      }
-
-      // ── corner accent dots ───────────────────────────────────────────────
-      const corners = [
-        [-halfW, -halfH, 0],
-        [ halfW, -halfH, 0],
-        [-halfW,  halfH, 0],
-        [ halfW,  halfH, 0],
-      ]
-      corners.forEach(([cx, cy, cz]) => {
-        const p = project(cx, cy, cz, tiltX, tiltY)
-        ctx.beginPath()
-        ctx.arc(p.sx, p.sy, 2.5, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(0,255,80,${(p.alpha * 0.6).toFixed(3)})`
-        ctx.fill()
-      })
-
-      // ── scanlines ────────────────────────────────────────────────────────
-      ctx.fillStyle = `rgba(0,0,0,${CFG.scanlineAlpha})`
-      for (let y = 0; y < H; y += CFG.scanlineGap) {
-        ctx.fillRect(0, y, W, 1)
-      }
-
-      // ── subtle vignette ──────────────────────────────────────────────────
-      const vgrd = ctx.createRadialGradient(W/2, H/2, H*0.3, W/2, H/2, H*0.85)
-      vgrd.addColorStop(0, 'rgba(0,0,0,0)')
-      vgrd.addColorStop(1, 'rgba(0,0,0,0.55)')
-      ctx.fillStyle = vgrd
-      ctx.fillRect(0, 0, W, H)
-
-      raf = requestAnimationFrame(drawFrame)
-    }
-
-    // ── init ────────────────────────────────────────────────────────────────
-    const ro = new ResizeObserver(resize)
-    ro.observe(canvas)
-    resize()
-    window.addEventListener('mousemove', onMouseMove)
-    drawFrame()
-
-    return () => {
-      cancelAnimationFrame(raf)
-      ro.disconnect()
-      window.removeEventListener('mousemove', onMouseMove)
-    }
+    return () =>
+      window.removeEventListener('mousemove', onMove)
   }, [])
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
-      style={{ display: 'block' }}
-    />
+    <div
+      className="absolute inset-0 overflow-hidden"
+      style={{
+        background:
+          'radial-gradient(circle at center, #06130b 0%, #020503 60%, #000000 100%)',
+      }}
+    >
+      {/* glowing background orb */}
+      <div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+        style={{
+          width: '500px',
+          height: '500px',
+          background:
+            'radial-gradient(circle, rgba(0,255,120,0.18) 0%, transparent 70%)',
+        }}
+      />
+
+      {/* scanlines */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          zIndex: 2,
+          opacity: 0.12,
+          backgroundImage:
+            'repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 4px)',
+        }}
+      />
+
+      {/* vignette */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          zIndex: 2,
+          background:
+            'radial-gradient(circle at center, transparent 35%, rgba(0,0,0,0.85) 100%)',
+        }}
+      />
+
+      <Canvas
+        shadows
+        dpr={[1, 2]}
+        gl={{
+          antialias: true,
+          alpha: false,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.8,
+        }}
+        camera={{ position: [0, 0, 7] }}
+      >
+        <fog attach="fog" args={['#020503', 8, 18]} />
+
+        <CameraRig />
+
+        <Lights />
+
+        <Suspense fallback={null}>
+          <AceCard mouseRef={mouseRef} />
+        </Suspense>
+      </Canvas>
+    </div>
   )
 }

@@ -3,37 +3,36 @@ import { useEffect, useRef } from 'react'
 // Boot sequence lines — edit freely
 const LINES = [
   { text: 'ALYAN AKRAM SYSTEMS v0xAA', cls: 'bright', delay: 0 },
-  { text: '─────────────────────────────────────────', cls: 'dim', delay: 60 },
-  { text: 'POST check...', cls: '', delay: 100 },
-  { text: '  [OK] CPU: Intel i9 × 16 cores', cls: 'dim', delay: 50 },
-  { text: '  [OK] RAM: 64GB DDR5', cls: 'dim', delay: 50 },
-  { text: '  [OK] GPU: RTX 4090 — for training models obviously', cls: 'dim', delay: 50 },
-  { text: '', cls: '', delay: 350 },
-  { text: 'Loading kernel modules...', cls: '', delay: 100 },
-  { text: '  [OK] python3.12 ................... loaded', cls: 'dim', delay: 50 },
-  { text: '  [OK] fastapi / uvicorn ............ loaded', cls: 'dim', delay: 50 },
-  { text: '  [OK] react + vite ................. loaded', cls: 'dim', delay: 50 },
-  { text: '  [OK] openai_sdk ................... loaded', cls: 'dim', delay: 50 },
-  { text: '  [OK] tailwindcss .................. loaded', cls: 'dim', delay: 50 },
-  { text: '', cls: '', delay: 100 },
-  { text: 'Mounting filesystems...', cls: '', delay: 150 },
-  { text: '  /dev/projects → /home/aa/work ........ done', cls: 'dim', delay: 50 },
-  { text: '  /dev/skills   → /usr/share/aa ........ done', cls: 'dim', delay: 50 },
-  { text: '', cls: '', delay: 100 },
-  { text: 'Network interfaces:', cls: '', delay: 150 },
-  { text: '  eth0  192.168.0.1  ■ ONLINE', cls: 'dim', delay: 50 },
-  { text: '  tun0  vpn0         ■ SECURE', cls: 'dim', delay: 50 },
-  { text: '', cls: '', delay: 100 },
-  { text: '⚠  WARNING: coffee.service — low caffeine detected', cls: 'warn', delay: 150 },
-  { text: '', cls: '', delay: 100 },
-  { text: 'Starting desktop environment...', cls: 'bright', delay: 150 },
-  { text: '__PROGRESS__', cls: '', delay: 150 },
-  { text: '', cls: '', delay: 100 },
-  { text: '✓ BOOT COMPLETE — Welcome, visitor.', cls: 'bright', delay: 150 },
+  { text: '─────────────────────────────────────────', cls: 'dim', delay: 0 },
+  { text: 'POST check...', cls: '', delay: 0 },
+  { text: '  [OK] CPU: Intel i9 × 24 cores', cls: 'dim', delay: 0 },
+  { text: '  [OK] RAM: 32GB DDR5', cls: 'dim', delay: 0 },
+  { text: '  [OK] GPU: RTX 4060 — for training models obviously', cls: 'dim', delay: 0 },
+  { text: '', cls: '', delay: 0 },
+  { text: 'Loading kernel modules...', cls: '', delay: 0 },
+  { text: '  [OK] python3.xx ................... loaded', cls: 'dim', delay: 0 },
+  { text: '  [OK] fastapi / uvicorn ............ loaded', cls: 'dim', delay: 0 },
+  { text: '  [OK] react + vite ................. loaded', cls: 'dim', delay: 0 },
+  { text: '  [OK] tailwindcss .................. loaded', cls: 'dim', delay: 0 },
+  { text: '', cls: '', delay: 0 },
+  { text: 'Mounting filesystems...', cls: '', delay: 0 },
+  { text: '  /dev/projects → /home/aa/work ........ done', cls: 'dim', delay: 0 },
+  { text: '  /dev/skills   → /usr/share/aa ........ done', cls: 'dim', delay: 0 },
+  { text: '', cls: '', delay: 0 },
+  { text: 'Network interfaces:', cls: '', delay: 0 },
+  { text: '  eth0  192.168.0.1  ■ ONLINE', cls: 'dim', delay: 0 },
+  { text: '  tun0  vpn0         ■ SECURE', cls: 'dim', delay: 0 },
+  { text: '', cls: '', delay: 0 },
+  { text: '⚠  WARNING: coffee.service — low caffeine detected', cls: 'warn', delay: 0 },
+  { text: '', cls: '', delay: 0 },
+  { text: 'Starting desktop environment...', cls: 'bright', delay: 0 },
+  { text: '__PROGRESS__', cls: '', delay: 0 },
+  { text: '', cls: '', delay: 0 },
+  { text: '✓ BOOT COMPLETE — Welcome, visitor.', cls: 'bright', delay: 0 },
 ]
 
 // Char-by-char typing speed (ms)
-const CHAR_SPEED = 9
+const CHAR_SPEED = 0.1
 
 export default function Terminal({ onDone }) {
   const outputRef = useRef(null)
@@ -53,7 +52,7 @@ export default function Terminal({ onDone }) {
       for (const ch of text) {
         if (cancelled) return
         el.textContent += ch
-        await sleep(CHAR_SPEED + Math.random() * 12)
+        await sleep(CHAR_SPEED + Math.random() * 2) // add some random variance to make it feel more natural
       }
     }
 
@@ -144,7 +143,7 @@ export default function Terminal({ onDone }) {
           <div className="w-2.5 h-2.5 rounded-full bg-[#3a1a1a]" />
           <div className="w-2.5 h-2.5 rounded-full bg-[#2a2a1a]" />
           <div className="w-2.5 h-2.5 rounded-full bg-[#1a3a1a]" />
-          <span className="ml-auto text-[11px] text-[#2a6a2a] tracking-[2px]">BIOS v2.4.1 — 0xAA</span>
+          <span className="ml-auto text-[11px] text-[#2a6a2a] tracking-[2px]">BIOS v3.9.1 — 0xAA</span>
         </div>
 
         {/* output area */}
