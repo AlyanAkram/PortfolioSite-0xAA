@@ -2,7 +2,7 @@
 
 > A retro Linux desktop OS built in React. Boot sequence, terminal, draggable windows, 3D card — the whole thing.
 
-**Live:** [your-domain.vercel.app](https://your-domain.vercel.app)
+**Live:** [alyanakram.vercel.app](https://0xaa.vercel.app)
 
 ---
 
