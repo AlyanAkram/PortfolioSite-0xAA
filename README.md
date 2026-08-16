@@ -1,108 +1,66 @@
-# 0xAA — Portfolio
+# Portfolio v2 — Three Experiences
 
-> A retro Linux desktop OS built in React. Boot sequence, terminal, draggable windows, 3D card — the whole thing.
+Your portfolio now opens on a profile-select screen (Netflix-style) and branches
+into three separate experiences. This zip contains only the `src/` folder —
+drop it into your existing Vite project (same one this came from) and it
+will replace the old `src/`.
 
-**Live:** [alyanakram.vercel.app](https://0xaa.vercel.app)
+## What changed
 
----
+**Entry point:** `App.jsx` is now a small router with four states:
+`profiles → terminal | basic | game`. Each experience gets an `onExit`
+callback wired to a "← Profiles" button so you can back out.
 
-## What it is
+- **Terminal** — your original boot-sequence → OS-desktop experience,
+  unchanged in look and feel, just refactored.
+- **Standard** — a brand-new, normal scrolling website: navbar, hero,
+  about, projects, skills, contact, footer. Different type system
+  (Fraunces + Inter + IBM Plex Mono) so it doesn't feel like a reskin of
+  the terminal.
+- **Arcade** — a "coming soon" placeholder with its own pixel/arcade
+  styling. Swap this out later once you actually build the game version.
 
-A portfolio site that pretends to be a Linux boot environment. When you land on it, a systemd-style terminal boot sequence plays out line by line, then fades into a desktop with folder icons. Double-clicking a folder opens a window with the content inside. There's a 3D card in the background that tracks your cursor.
+**Content is centralized.** `src/data/profileData.js` holds your bio,
+project list, skills, and contact info. Every experience imports from it —
+edit copy once, it updates everywhere. I refreshed the content itself too:
+added Fenroe, the YouTube automation pipeline, Pulsark Studio, and a few
+other things, and reworded the about/skills sections.
 
-No frameworks beyond React. No component libraries. Everything styled by hand.
+**Terminal sections are now modular files**, per your ask:
+`components/terminal/sections/{About,Projects,Skills,Contact}.jsx`, each
+pulling from `profileData.js`, plus a `primitives.jsx` with the shared
+terminal-styled UI atoms (`Tag`, `ProjectCard`, `ContactLink`, etc).
+`components/basic/` has the equivalent split for the Standard site.
 
----
+## Setup notes
 
-## Stack
+1. This assumes your existing project already has `react`, `three`,
+   `@react-three/fiber`, `@react-three/drei`, and Tailwind v4 configured
+   (all of which the original `Desktop.jsx`/`DesktopBackground.jsx` already
+   depended on) — nothing new was added there.
+2. `index.css` now pulls in Google Fonts (Share Tech Mono, DM Sans,
+   Fraunces, Inter, IBM Plex Mono, Press Start 2P) via `@import url(...)`.
+   If you'd rather self-host fonts, swap that line out.
+3. `PROFILE.resume` in `profileData.js` still points at
+   `/Alyan_Akram_Resume.pdf` — make sure that file exists in your `public/`
+   folder (same as before).
 
-| Layer | Tech |
-|---|---|
-| Framework | React 19 + Vite 8 |
-| Styling | Tailwind CSS v4 |
-| 3D Background | Three.js · `@react-three/fiber` · `@react-three/drei` |
-| Fonts | Share Tech Mono · DM Sans (Google Fonts) |
-| Deployment | Vercel |
+## Verified
 
----
+I scaffolded a throwaway Vite + React + Tailwind v4 project, dropped this
+`src/` in, installed `three` / `@react-three/fiber` / `@react-three/drei`,
+and ran `npm run build` — it compiles clean with no errors, and `npm run
+dev` starts without issue. I did not visually screenshot every screen, so
+give it a look in the browser before shipping — especially spacing and
+contrast on the new Standard site and the profile-select hover states.
 
-## Structure
+## Next steps / ideas
 
-```
-src/
-├── pages/
-│   └── Landing.jsx          # State machine: terminal → transition → desktop
-├── components/
-│   ├── Terminal.jsx          # Boot sequence, types line by line
-│   ├── Desktop.jsx           # Icons, window manager, taskbar, all content
-│   ├── Window.jsx            # Reusable window with Linux-style controls
-│   └── DesktopBackground.jsx # Three.js 3D card + cursor tracking
-└── App.jsx
-
-public/
-└── Alyan_Akram_Resume.pdf   # Served at /Alyan_Akram_Resume.pdf
-```
-
----
-
-## How it works
-
-**Boot sequence (`Terminal.jsx`)**
-Lines are typed character-by-character using a simple async loop with `setTimeout`. Each line has a configurable `pause_after` so section breaks feel deliberate. Coloured badge prefixes (`[  OK  ]`, `[ WARN ]`, etc.) are split into separate spans and typed independently so the colour lands before the message.
-
-**Desktop (`Desktop.jsx`)**
-Folder icons live in a flex-column layout on the left. Single click selects, double-click opens a window. All portfolio content (About, Projects, Skills, Contact) lives in a `WINDOW_CONTENT` map — edit that object to update anything.
-
-**Window (`Window.jsx`)**
-Absolute-positioned, centred. Linux-style flat square controls on the right: minimize collapses the body, maximize goes full-screen minus the taskbar. The parent wrapper uses `pointerEvents: none` so icons behind the window stay clickable; the window itself re-enables pointer events with `pointerEvents: auto`.
-
-**3D Background (`DesktopBackground.jsx`)**
-A GLB model (ace of spades card) rendered via React Three Fiber. Mouse position is tracked in a ref (not state, to avoid re-renders) and lerped each frame for smooth rotation. Wrapped in `<Float>` for idle animation.
-
----
-
-## Getting started
-
-```bash
-git clone https://github.com/AlyanAkram/portfolio
-cd portfolio
-npm install
-npm run dev
-```
-
-Then open `http://localhost:5173`.
-
----
-
-## Updating content
-
-All portfolio text lives in the `WINDOW_CONTENT` object inside `Desktop.jsx`. Each key maps to a folder:
-
-```js
-const WINDOW_CONTENT = {
-  about:    { title: '~/about.me',   body: <> ... </> },
-  projects: { title: '~/projects/',  body: <> ... </> },
-  skills:   { title: '~/skills.sh',  body: <> ... </> },
-  contact:  { title: '~/contact/',   body: <> ... </> },
-}
-```
-
-To update the boot sequence, edit the `LINES` array in `Terminal.jsx`. Each entry takes a `text`, `cls` (controls colour), and optional `pause_after` in milliseconds.
-
-To swap the resume, replace `public/Alyan_Akram_Resume.pdf` and update `RESUME_FILE.href` in `Desktop.jsx` if the filename changes.
-
----
-
-## Deploying to Vercel
-
-```bash
-npm run build
-```
-
-Or connect the repo to Vercel — it auto-detects Vite. The `vercel.json` in the root handles SPA routing so direct URLs don't 404.
-
----
-
-## License
-
-MIT — use it, fork it, make it yours.
+- Build out the actual Arcade/game experience to replace the placeholder.
+- Consider swapping the state-based router for `react-router-dom` if you
+  want real URLs per experience (`/terminal`, `/site`, `/game`) — right
+  now it's all client state, so a refresh always lands back on the
+  profile-select screen.
+- The `AceCard` GLB model referenced in `DesktopBackground.jsx`
+  (`/AS.glb`) wasn't in the uploaded archive — make sure it's still in
+  your `public/` folder.

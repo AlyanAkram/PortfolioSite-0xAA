@@ -15,13 +15,13 @@ const LINES = [
 
   { text: '', cls: '' },
 
-  { text: '[ 01 ]  Web & App Development', cls: 'project' },
+  { text: '[ 01 ]  Web & Mobile Development', cls: 'project' },
   { text: '[ 02 ]  AI & Automation', cls: 'project' },
   { text: '[ 03 ]  SaaS & Digital Products', cls: 'project' },
 
   { text: '', cls: '' },
 
-  { text: '[ LIVE ]  pulsark.dev', cls: 'net' },
+  { text: '[ LIVE ]  stealthwriter.app', cls: 'net' },
   { text: '[ READY ]  Open to international clients', cls: 'note' },
 
   { text: '', cls: '' },
@@ -54,8 +54,6 @@ export default function Terminal({ onDone }) {
       for (const ch of text) {
         if (cancelled) return
         el.textContent += ch
-
-        // Almost instant, but still gives the terminal effect
         await sleep(CHAR_SPEED)
       }
     }
@@ -234,23 +232,8 @@ export default function Terminal({ onDone }) {
             borderBottom: '1px solid rgba(0,200,64,0.1)',
           }}
         >
-          <span
-            style={{
-              color: 'rgba(0,200,64,0.4)',
-              fontSize: 10,
-              marginRight: 4,
-            }}
-          >
-            ▸
-          </span>
-
-          <span
-            style={{
-              color: 'rgba(0,200,64,0.4)',
-              fontSize: 10,
-              letterSpacing: 1,
-            }}
-          >
+          <span style={{ color: 'rgba(0,200,64,0.4)', fontSize: 10, marginRight: 4 }}>▸</span>
+          <span style={{ color: 'rgba(0,200,64,0.4)', fontSize: 10, letterSpacing: 1 }}>
             alyan@portfolio — bash — startup
           </span>
 
@@ -259,19 +242,11 @@ export default function Terminal({ onDone }) {
               <div
                 key={i}
                 style={{
-                  width: 18,
-                  height: 18,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '1px solid rgba(0,200,64,0.12)',
-                  borderRadius: 2,
-                  color:
-                    i === 2
-                      ? 'rgba(200,80,60,0.5)'
-                      : 'rgba(0,200,64,0.3)',
-                  fontSize: 9,
-                  background: 'rgba(0,200,64,0.03)',
+                  width: 18, height: 18, display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  border: '1px solid rgba(0,200,64,0.12)', borderRadius: 2,
+                  color: i === 2 ? 'rgba(200,80,60,0.5)' : 'rgba(0,200,64,0.3)',
+                  fontSize: 9, background: 'rgba(0,200,64,0.03)',
                 }}
               >
                 {icon}
