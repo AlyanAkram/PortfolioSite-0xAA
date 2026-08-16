@@ -6,7 +6,7 @@ import Projects from "../components/basic/Projects";
 import Skills from "../components/basic/Skills";
 import Contact from "../components/basic/Contact";
 import Footer from "../components/basic/Footer";
-import { INK } from "../components/basic/tokens";
+import { INK } from "../components/basic/Tokens";
 
 export default function BasicExperience({ onExit }) {
   return (
