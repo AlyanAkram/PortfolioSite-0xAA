@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const ARCADE = "'Press Start 2P', monospace"
 
-export default function ComingSoonExperience({ onExit }) {
+export default function ArcadeExperience() {
+  const navigate = useNavigate()
+  const onExit = () => navigate('/')
   const [blink, setBlink] = useState(true)
 
   useEffect(() => {

@@ -1,20 +1,21 @@
-import { useState } from 'react'
-import ProfileSelect from './pages/ProfileSelect'
-import TerminalExperience from './pages/TerminalExperience'
-import BasicExperience from './pages/BasicExperience'
-import ComingSoonExperience from './pages/ComingSoonExperience'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import ProfileSelect from './profileselect'
+import TerminalExperience from './terminal/pages/TerminalExperience'
+import StandardExperience from './standard/pages/StandardExperience'
+import ArcadeExperience from './arcade/pages/ArcadeExperience'
 
-// screen: 'profiles' | 'terminal' | 'basic' | 'game'
 function App() {
-  const [screen, setScreen] = useState('profiles')
-
-  const goToProfiles = () => setScreen('profiles')
-
-  if (screen === 'terminal') return <TerminalExperience onExit={goToProfiles} />
-  if (screen === 'basic') return <BasicExperience onExit={goToProfiles} />
-  if (screen === 'game') return <ComingSoonExperience onExit={goToProfiles} />
-
-  return <ProfileSelect onSelect={setScreen} />
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<ProfileSelect />} />
+        <Route path="/terminal" element={<TerminalExperience />} />
+        <Route path="/standard" element={<StandardExperience />} />
+        <Route path="/arcade" element={<ArcadeExperience />} />
+        <Route path="*" element={<ProfileSelect />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
 export default App

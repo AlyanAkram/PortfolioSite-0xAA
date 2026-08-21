@@ -20,3 +20,119 @@ body {
 ::selection {
   background: rgba(0, 200, 64, 0.3);
 }
+
+/* ── ProfileSelect: hover animations ───────────────────────────────── */
+
+@keyframes ps-scan {
+  0% {
+    top: -20%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    top: 110%;
+    opacity: 0;
+  }
+}
+
+.ps-card-standard:hover .ps-scan-bar {
+  animation: ps-scan 1.3s ease-in-out infinite;
+}
+
+.ps-card-standard .ps-corner {
+  transition: all 0.25s ease;
+}
+
+.ps-card-standard:hover .ps-corner {
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes ps-glitch-shift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  4% {
+    transform: translate(-3px, 1px);
+    opacity: 0.9;
+  }
+  8% {
+    transform: translate(3px, -1px);
+    opacity: 0.6;
+  }
+  12% {
+    transform: translate(-2px, 0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0;
+  }
+  62% {
+    transform: translate(2px, -2px);
+    opacity: 0.8;
+  }
+  66% {
+    transform: translate(-3px, 1px);
+    opacity: 0.4;
+  }
+  70% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+}
+
+.ps-card-arcade:hover .ps-glitch-r {
+  animation: ps-glitch-shift 2.2s steps(2, end) infinite;
+}
+
+.ps-card-arcade:hover .ps-glitch-c {
+  animation: ps-glitch-shift 2.2s steps(2, end) infinite reverse;
+}
+
+@keyframes ps-glitch-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 1;
+  }
+  93% {
+    opacity: 0.4;
+  }
+  94% {
+    opacity: 1;
+  }
+  96% {
+    opacity: 0.6;
+  }
+  97% {
+    opacity: 1;
+  }
+}
+
+.ps-card-arcade:hover .ps-glitch-icon {
+  animation: ps-glitch-flicker 1.8s linear infinite;
+}
+
+@keyframes ps-pulse-ring {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+.ps-card-terminal:hover .ps-pulse {
+  animation: ps-pulse-ring 1.6s ease-out infinite;
+}
