@@ -182,6 +182,197 @@ function LockBadge({ accent }) {
   );
 }
 
+function StandardBlueprint({ active, accent, size }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !active) return undefined;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+
+    let raf;
+    let frame = 0;
+
+    const nodes = new Array(14).fill(null).map(() => ({
+      x: Math.floor(Math.random() * (size / 8)) * 8,
+      y: Math.floor(Math.random() * (size / 8)) * 8,
+      radius: Math.random() > 0.7 ? 3 : 2,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.015 + Math.random() * 0.025,
+    }));
+
+    function draw() {
+      frame++;
+
+      ctx.clearRect(0, 0, size, size);
+
+      /*
+       * Very subtle technical grid
+       */
+      ctx.strokeStyle = `${accent}0d`;
+      ctx.lineWidth = 1;
+
+      for (let x = 0; x < size; x += 20) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, size);
+        ctx.stroke();
+      }
+
+      for (let y = 0; y < size; y += 20) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(size, y);
+        ctx.stroke();
+      }
+
+      /*
+       * Connecting network
+       */
+      nodes.forEach((node, i) => {
+        nodes.slice(i + 1).forEach((other) => {
+          const dx = node.x - other.x;
+          const dy = node.y - other.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 70) {
+            ctx.beginPath();
+            ctx.moveTo(node.x, node.y);
+            ctx.lineTo(other.x, other.y);
+
+            ctx.strokeStyle = `${accent}${Math.floor((1 - distance / 70) * 35)
+              .toString(16)
+              .padStart(2, "0")}`;
+
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        });
+      });
+
+      /*
+       * Animated nodes
+       */
+      nodes.forEach((node) => {
+        node.phase += node.speed;
+
+        const pulse = 0.4 + Math.abs(Math.sin(node.phase)) * 0.6;
+
+        ctx.globalAlpha = pulse;
+
+        ctx.fillStyle = accent;
+
+        ctx.fillRect(
+          Math.floor(node.x / 4) * 4 - node.radius / 2,
+          Math.floor(node.y / 4) * 4 - node.radius / 2,
+          node.radius,
+          node.radius,
+        );
+
+        /*
+         * Small expanding pulse around active nodes
+         */
+        if (Math.sin(node.phase) > 0.92) {
+          ctx.globalAlpha = 0.25;
+
+          ctx.strokeStyle = accent;
+          ctx.lineWidth = 1;
+
+          ctx.strokeRect(node.x - 6, node.y - 6, 12, 12);
+        }
+      });
+
+      /*
+       * UI construction rectangles
+       */
+      const pulse = 0.35 + Math.abs(Math.sin(frame * 0.025)) * 0.35;
+
+      ctx.globalAlpha = pulse;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 1;
+
+      // Center frame
+      ctx.strokeRect(26, 26, size - 52, size - 52);
+
+      // Inner frame
+      ctx.globalAlpha = 0.2;
+
+      ctx.strokeRect(34, 34, size - 68, size - 68);
+
+      /*
+       * Small UI markers
+       */
+      ctx.globalAlpha = 0.65;
+      ctx.fillStyle = accent;
+
+      const markers = [
+        [18, 18],
+        [size - 22, 18],
+        [18, size - 22],
+        [size - 22, size - 22],
+      ];
+
+      markers.forEach(([x, y]) => {
+        ctx.fillRect(x, y, 4, 4);
+      });
+
+      /*
+       * Animated horizontal / vertical data segments
+       */
+      const t = frame * 0.8;
+
+      ctx.globalAlpha = 0.4;
+
+      for (let i = 0; i < 5; i++) {
+        const x = ((t + i * 45) % (size + 40)) - 40;
+
+        ctx.fillRect(Math.floor(x / 4) * 4, 12 + i * 34, 18 + i * 5, 2);
+      }
+
+      /*
+       * Little floating UI squares
+       */
+      ctx.globalAlpha = 0.45;
+
+      for (let i = 0; i < 6; i++) {
+        const x = 20 + ((Math.sin(frame * 0.01 + i * 2) + 1) / 2) * (size - 40);
+
+        const y =
+          20 + ((Math.cos(frame * 0.013 + i * 1.4) + 1) / 2) * (size - 40);
+
+        ctx.fillRect(Math.floor(x / 4) * 4, Math.floor(y / 4) * 4, 4, 4);
+      }
+
+      ctx.globalAlpha = 1;
+
+      raf = requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    return () => cancelAnimationFrame(raf);
+  }, [active, accent, size]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      style={{
+        opacity: active ? 0.75 : 0,
+        width: size,
+        height: size,
+      }}
+    />
+  );
+}
+
 // Falling-character rain, drawn on a canvas that only animates while the
 // terminal card is hovered.
 function MatrixRain({ active, accent, size }) {
@@ -238,6 +429,153 @@ function MatrixRain({ active, accent, size }) {
   );
 }
 
+function PixelArcade({ active, accent, size }) {
+  const canvasRef = useRef(null);
+  const particlesRef = useRef([]);
+  const frameRef = useRef(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !active) return undefined;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+
+    const ctx = canvas.getContext("2d");
+    ctx.scale(dpr, dpr);
+
+    const colors = [accent, "#4fffe0", "#ffffff"];
+
+    // Pixel particles
+    particlesRef.current = new Array(42).fill(null).map(() => ({
+      x: Math.floor(Math.random() * (size / 4)) * 4,
+      y: Math.floor(Math.random() * (size / 4)) * 4,
+      size: Math.random() > 0.8 ? 6 : 4,
+      speed: 0.25 + Math.random() * 0.55,
+      drift: (Math.random() - 0.5) * 0.25,
+      opacity: 0.25 + Math.random() * 0.65,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      phase: Math.random() * Math.PI * 2,
+    }));
+
+    let raf;
+
+    function draw() {
+      frameRef.current++;
+
+      // Dark arcade screen
+      ctx.fillStyle = "rgba(10, 24, 48, 0.22)";
+      ctx.fillRect(0, 0, size, size);
+
+      // CRT horizontal scanlines
+      ctx.fillStyle = "rgba(255,255,255,0.025)";
+
+      for (let y = 0; y < size; y += 6) {
+        ctx.fillRect(0, y, size, 1);
+      }
+
+      // Pixel particles
+      particlesRef.current.forEach((p) => {
+        p.y += p.speed;
+        p.x += p.drift;
+
+        const flicker =
+          0.45 + Math.abs(Math.sin(frameRef.current * 0.045 + p.phase)) * 0.55;
+
+        ctx.globalAlpha = p.opacity * flicker;
+        ctx.fillStyle = p.color;
+
+        // Pixel
+        ctx.fillRect(
+          Math.floor(p.x / 4) * 4,
+          Math.floor(p.y / 4) * 4,
+          p.size,
+          p.size,
+        );
+
+        // Reset
+        if (p.y > size + 8) {
+          p.y = -8;
+          p.x = Math.floor(Math.random() * (size / 4)) * 4;
+        }
+
+        if (p.x < -8) p.x = size + 8;
+        if (p.x > size + 8) p.x = -8;
+      });
+
+      /*
+       * Floating arcade blocks
+       */
+      const blockTime = frameRef.current * 0.018;
+
+      for (let i = 0; i < 8; i++) {
+        const x = (Math.sin(blockTime + i * 1.7) * 0.5 + 0.5) * size;
+
+        const y = ((blockTime * 18 + i * 37) % (size + 30)) - 15;
+
+        const alpha = 0.12 + Math.abs(Math.sin(blockTime * 2 + i)) * 0.2;
+
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = i % 2 === 0 ? accent : "#4fffe0";
+
+        ctx.fillRect(Math.floor(x / 6) * 6, Math.floor(y / 6) * 6, 6, 6);
+      }
+
+      /*
+       * Occasional horizontal glitch bars
+       */
+      if (frameRef.current % 90 < 3) {
+        const y = Math.floor(Math.random() * (size / 6)) * 6;
+
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = accent;
+
+        ctx.fillRect(0, y, Math.floor(Math.random() * size * 0.7) + 20, 2);
+      }
+
+      /*
+       * Pixel sparkle / coin effect
+       */
+      if (frameRef.current % 55 < 2) {
+        const x = Math.floor(Math.random() * (size / 8)) * 8;
+
+        const y = Math.floor(Math.random() * (size / 8)) * 8;
+
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = "#ffffff";
+
+        ctx.fillRect(x, y, 4, 4);
+        ctx.fillRect(x + 8, y, 4, 4);
+        ctx.fillRect(x + 4, y + 4, 4, 4);
+        ctx.fillRect(x, y + 8, 4, 4);
+        ctx.fillRect(x + 8, y + 8, 4, 4);
+      }
+
+      ctx.globalAlpha = 1;
+
+      raf = requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    return () => cancelAnimationFrame(raf);
+  }, [active, accent, size]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      style={{
+        opacity: active ? 0.9 : 0,
+        width: size,
+        height: size,
+      }}
+    />
+  );
+}
+
 function ProfileCard({ profile, onSelect }) {
   const [hovered, setHovered] = useState(false);
   const boxSize = 196;
@@ -280,34 +618,20 @@ function ProfileCard({ profile, onSelect }) {
             />
           )}
 
-          {/* standard: scanning light sweep */}
           {profile.id === "standard" && (
-            <div
-              className="ps-scan-bar pointer-events-none absolute left-0 w-full"
-              style={{
-                height: 26,
-                background: `linear-gradient(180deg, transparent, ${profile.accent}55, transparent)`,
-                opacity: 0,
-              }}
+            <StandardBlueprint
+              active={hovered}
+              accent={profile.accent}
+              size={boxSize}
             />
           )}
 
-          {/* arcade: chromatic-aberration glitch layers */}
           {profile.id === "arcade" && (
-            <>
-              <div
-                className="ps-glitch-r pointer-events-none absolute inset-0 flex items-center justify-center"
-                style={{ opacity: 0, mixBlendMode: "screen" }}
-              >
-                <Icon type="arcade" accent="#ff2ea6" />
-              </div>
-              <div
-                className="ps-glitch-c pointer-events-none absolute inset-0 flex items-center justify-center"
-                style={{ opacity: 0, mixBlendMode: "screen" }}
-              >
-                <Icon type="arcade" accent="#4fffe0" />
-              </div>
-            </>
+            <PixelArcade
+              active={hovered}
+              accent={profile.accent}
+              size={boxSize}
+            />
           )}
 
           {/* corner brackets for standard */}
